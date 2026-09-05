@@ -34,6 +34,8 @@ module Kotoshu
       end
 
       def line_begin(text, offset)
+        return 0 if offset <= 0
+
         last_nl = text.rindex("\n", offset - 1)
         last_nl ? last_nl + 1 : 0
       end

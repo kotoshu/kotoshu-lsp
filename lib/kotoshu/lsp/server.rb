@@ -75,6 +75,11 @@ module Kotoshu
         doc = get(uri)
         doc ? doc[:text] : nil
       end
+
+      # All open [uri, document] pairs, snapshot under the lock.
+      def each_open
+        @mutex.synchronize { @docs.dup.each { |uri, doc| yield(uri, doc) } }
+      end
     end
 
     class Checker
@@ -82,6 +87,8 @@ module Kotoshu
         @logger = logger
         @spellcheckers = {}
         @spellcheckers_mutex = Mutex.new
+        @personal_dictionary_words = Set.new
+        @personal_dictionary_mtime = nil
       end
 
       def reset
@@ -94,7 +101,9 @@ module Kotoshu
         checker = checker_for(language)
         return empty_result(text) unless checker
 
-        checker.check(text)
+        result = checker.check(text)
+        filter_personal_dictionary(result)
+        result
       rescue Kotoshu::ResourceNotSetupError => e
         @logger.warn("resource not set up for #{language}: #{e.message}")
         nil
@@ -123,6 +132,36 @@ module Kotoshu
 
       def empty_result(_text)
         Kotoshu::Models::Result::DocumentResult.success
+      end
+
+      # Words in the user personal dictionary (~/.config/kotoshu/
+      # personal.dic, KOTOSHU_PERSONAL_DIC override) never surface as
+      # diagnostics. Reloaded whenever the file mtime changes, so
+      # additions from the CLI or an editor take effect on the next
+      # check without a server restart.
+      def filter_personal_dictionary(result)
+        return result unless result.respond_to?(:errors) && result.errors
+
+        personal = personal_dictionary_words
+        return result if personal.empty?
+
+        result.errors.reject! { |err| personal.include?(err.word.to_s.downcase) }
+        result
+      end
+
+      def personal_dictionary_words
+        path = Kotoshu::PersonalDictionary.file_path
+        mtime = File.exist?(path) ? File.mtime(path) : nil
+        if mtime != @personal_dictionary_mtime
+          @personal_dictionary_words =
+            if mtime
+              Kotoshu::PersonalDictionary.words.map(&:downcase).to_set
+            else
+              Set.new
+            end
+          @personal_dictionary_mtime = mtime
+        end
+        @personal_dictionary_words
       end
     end
 
@@ -155,11 +194,14 @@ module Kotoshu
     end
 
     class Server
+      ADD_TO_PERSONAL_DICTIONARY_COMMAND = "kotoshu.addToPersonalDictionary"
+
       CAPABILITIES = {
         textDocumentSync: { openClose: true, change: 1, save: false },
         completionProvider: { resolveProvider: false, triggerCharacters: [] },
         codeActionProvider: true,
-        hoverProvider: true
+        hoverProvider: true,
+        executeCommandProvider: { commands: [ADD_TO_PERSONAL_DICTIONARY_COMMAND] }
       }.freeze
 
       attr_reader :documents, :checker
@@ -217,6 +259,7 @@ module Kotoshu
         when "textDocument/codeAction" then respond(id, handle_code_action(params))
         when "textDocument/hover" then respond(id, handle_hover(params))
         when "textDocument/completion" then respond(id, nil)
+        when "workspace/executeCommand" then respond(id, handle_execute_command(params))
         else
           respond_error(id, -32601, "Method not found: #{method_name}") if id
         end
@@ -264,6 +307,45 @@ module Kotoshu
                           { uri: uri, diagnostics: diagnostics })
       end
 
+      # Server-side execution of the add-to-personal-dictionary
+      # quickfix. Clients that implement the command locally (the VS
+      # Code extension does) shadow this; every other LSP client gets
+      # it for free. Adding republishes diagnostics for all open
+      # documents so the word stops being flagged immediately.
+      def handle_execute_command(params)
+        case params["command"]
+        when ADD_TO_PERSONAL_DICTIONARY_COMMAND
+          uri, range = params["arguments"] || []
+          word = personal_word_at(uri, range)
+          return nil unless word && !word.empty?
+
+          Kotoshu::PersonalDictionary.add_word(word)
+          @checker.reset
+          republish_all_diagnostics
+          nil
+        else
+          nil
+        end
+      end
+
+      def personal_word_at(uri, range)
+        text = @documents.text(uri)
+        return nil unless text && range.is_a?(Hash)
+
+        start = range["start"] || {}
+        offset = offset_for_position(text, start["line"] || 0, start["character"] || 0)
+        return nil unless offset
+
+        word_at(text, offset)
+      end
+
+      def republish_all_diagnostics
+        @documents.each_open do |uri, doc|
+          language = language_id_for(uri, doc[:language_id])
+          publish_diagnostics(uri, doc[:text] || "", language)
+        end
+      end
+
       def handle_code_action(params)
         td = params["textDocument"] || {}
         uri = td["uri"]
@@ -300,7 +382,7 @@ module Kotoshu
           kind: "quickfix",
           command: {
             title: "Add to personal dictionary",
-            command: "kotoshu.addToPersonalDictionary",
+            command: ADD_TO_PERSONAL_DICTIONARY_COMMAND,
             arguments: [uri, range]
           }
         }

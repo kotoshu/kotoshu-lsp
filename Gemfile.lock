@@ -1,8 +1,8 @@
 PATH
   remote: .
   specs:
-    kotoshu-lsp (0.1.0)
-      kotoshu (~> 0.6)
+    kotoshu-lsp (0.1.1)
+      kotoshu (~> 1.0)
 
 GEM
   remote: https://rubygems.org/
@@ -23,6 +23,7 @@ GEM
     concurrent-ruby (1.3.8)
     csv (3.3.6)
     diff-lcs (1.6.2)
+    ffi (1.17.4)
     ffi (1.17.4-aarch64-linux-gnu)
     ffi (1.17.4-aarch64-linux-musl)
     ffi (1.17.4-arm-linux-gnu)
@@ -32,8 +33,9 @@ GEM
     ffi (1.17.4-x86_64-linux-gnu)
     ffi (1.17.4-x86_64-linux-musl)
     json (2.21.2)
-    kotoshu (0.6.0)
+    kotoshu (1.0.1)
       lutaml-model (~> 0.8)
+      rb_sys (~> 0.9)
       rubyzip (~> 2.3)
       thor (~> 1.0)
     language_server-protocol (3.17.0.6)
@@ -80,6 +82,9 @@ GEM
     racc (1.8.1)
     rainbow (3.1.1)
     rake (13.4.2)
+    rake-compiler-dock (1.12.0)
+    rb_sys (0.9.130)
+      rake-compiler-dock (= 1.12.0)
     regexp_parser (2.12.0)
     rspec (3.13.2)
       rspec-core (~> 3.13.0)
@@ -136,7 +141,7 @@ PLATFORMS
   x86_64-linux-musl
 
 DEPENDENCIES
-  kotoshu (~> 0.6)
+  kotoshu (~> 1.0)
   kotoshu-lsp!
   logger (~> 1.0)
   rake (~> 13.0)
@@ -151,6 +156,7 @@ CHECKSUMS
   concurrent-ruby (1.3.8) sha256=b2f1be836e968ccc78ccfce277ea79c72a88633f22306782c16ff23fb415d1e1
   csv (3.3.6) sha256=aba61e7e507a66f03d45cb1f3c4b6359861c3504038b422962875dce099e4456
   diff-lcs (1.6.2) sha256=9ae0d2cba7d4df3075fe8cd8602a8604993efc0dfa934cff568969efb1909962
+  ffi (1.17.4) sha256=bcd1642e06f0d16fc9e09ac6d49c3a7298b9789bcb58127302f934e437d60acf
   ffi (1.17.4-aarch64-linux-gnu) sha256=b208f06f91ffd8f5e1193da3cae3d2ccfc27fc36fba577baf698d26d91c080df
   ffi (1.17.4-aarch64-linux-musl) sha256=9286b7a615f2676245283aef0a0a3b475ae3aae2bb5448baace630bb77b91f39
   ffi (1.17.4-arm-linux-gnu) sha256=d6dbddf7cb77bf955411af5f187a65b8cd378cb003c15c05697f5feee1cb1564
@@ -160,8 +166,8 @@ CHECKSUMS
   ffi (1.17.4-x86_64-linux-gnu) sha256=9d3db14c2eae074b382fa9c083fe95aec6e0a1451da249eab096c34002bc752d
   ffi (1.17.4-x86_64-linux-musl) sha256=3fdf9888483de005f8ef8d1cf2d3b20d86626af206cbf780f6a6a12439a9c49e
   json (2.21.2) sha256=1f1d3b7cf2b3ba1a69beca0bb6db13d5438b80bff3cd54cdaaa620b9b07c1c6a
-  kotoshu (0.6.0) sha256=927029b98890aa43c517e43ee39dfed3286241b0a526570061d2bef2bda13925
-  kotoshu-lsp (0.1.0)
+  kotoshu (1.0.1) sha256=1092654c9075fc693d5433e36d31d63691aa4ff9c75e7b23dfd1b54f49cd6261
+  kotoshu-lsp (0.1.1)
   language_server-protocol (3.17.0.6) sha256=5ef2c0c138f8267e1bc631d3328347d354f96724b0af22f2c79516120443b7f0
   lint_roller (1.1.0) sha256=2c0c845b632a7d172cb849cc90c1bce937a28c5c8ccccb50dfd46a485003cc87
   liquid (5.13.0) sha256=09d594fd96b98e19a8fd5c32aadcc6950df429b69f48c2f774c0db0ce272bf19
@@ -185,6 +191,8 @@ CHECKSUMS
   racc (1.8.1) sha256=4a7f6929691dbec8b5209a0b373bc2614882b55fc5d2e447a21aaa691303d62f
   rainbow (3.1.1) sha256=039491aa3a89f42efa1d6dec2fc4e62ede96eb6acd95e52f1ad581182b79bc6a
   rake (13.4.2) sha256=cb825b2bd5f1f8e91ca37bddb4b9aaf345551b4731da62949be002fa89283701
+  rake-compiler-dock (1.12.0) sha256=f13205c2738f3d2053afcd03491a9e4541b22a59a0bfc53fc8bc883bd8188023
+  rb_sys (0.9.130) sha256=7d486d99c1da02635515deaf9860fc5aea90bb4ab2589b2deec7fdc7d3548615
   regexp_parser (2.12.0) sha256=35a916a1d63190ab5c9009457136ae5f3c0c7512d60291d0d1378ba18ce08ebb
   rspec (3.13.2) sha256=206284a08ad798e61f86d7ca3e376718d52c0bc944626b2349266f239f820587
   rspec-core (3.13.6) sha256=a8823c6411667b60a8bca135364351dda34cd55e44ff94c4be4633b37d828b2d
